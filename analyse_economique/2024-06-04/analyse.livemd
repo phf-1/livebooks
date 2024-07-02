@@ -1,0 +1,54 @@
+# Analyse économique 2024-06-30
+
+```elixir
+Mix.install([
+  {:kino_explorer, "~> 0.1.20"},
+  {:req, "~> 0.5.1"},
+  {:explorer, "~> 0.8.3"},
+  {:csv, "~> 3.2"},
+  {:adbc, "~> 0.6.0"},
+  {:vega_lite, "~> 0.1.9"},
+  {:kino_vega_lite, "~> 0.1.13"},
+  {:utils, path: Path.join([__DIR__, "utils"])},
+  {:yahoo_finanza, "~> 0.3.0"}
+])
+```
+
+## Alias
+
+```elixir
+alias Explorer.DataFrame, as: DF
+require Explorer.DataFrame
+alias VegaLite, as: Vl
+```
+
+## Sources de données
+
+```elixir
+data_sources = %{
+  inflation_us: "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=FPCPITOTLZGUSA&scale=left&cosd=1960-01-01&coed=2022-01-01&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Annual&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-06-30&revision_date=2024-06-30&nd=1960-01-01"
+}
+```
+
+## Base de données locale
+
+```elixir
+db_path = Path.join([__DIR__, "_database.sqlite3"]) 
+```
+
+## Données
+
+```elixir
+time_series = Kino.start_child!({Utils, data_sources: data_sources, db_path: db_path})
+df = Utils.df(time_series, :inflation_us)
+```
+
+## Visualisation
+
+```elixir
+Vl.new(width: 775, height: 400, title: "FRED USA Inflation 1960-2022")
+|> Vl.data_from_values(df, only: ["DATE", "FPCPITOTLZGUSA"])
+|> Vl.mark(:line)
+|> Vl.encode_field(:x, "DATE", type: :temporal)
+|> Vl.encode_field(:y, "FPCPITOTLZGUSA", type: :quantitative)
+```
